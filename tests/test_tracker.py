@@ -119,3 +119,11 @@ def test_empty_exports_do_not_create_files(tmp_path, monkeypatch):
 
     assert not csv_output.exists()
     assert not json_output.exists()
+
+
+def test_load_config_rejects_missing_settings(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text('{"poll_interval_seconds": 60}', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Missing config values"):
+        tracker.load_config(config_path)

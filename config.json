@@ -1,0 +1,11 @@
+{
+  "poll_interval_seconds": 60,
+  "min_market_cap": 100000,
+  "min_volume_5m": 10000,
+  "min_liquidity": 50000,
+  "min_lp_locked_pct": 100.0,
+  "max_rugcheck_score_normalised": 40,
+  "require_socials": true,
+  "migrated_token_suffixes": ["pump"],
+  "max_candidates_per_cycle": 30
+}

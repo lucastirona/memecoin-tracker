@@ -10,19 +10,63 @@ from typing import Any, Dict, Iterable, List
 import requests
 
 
-# Screening settings. Change these values to make the filter stricter or looser.
-POLL_INTERVAL_SECONDS = 60
-MIN_MARKET_CAP = 100_000
-MIN_VOLUME_5M = 10_000
-MIN_LIQUIDITY = 50_000
-MIN_LP_LOCKED_PCT = 100.0
-MAX_RUGCHECK_SCORE_NORMALISED = 40
-REQUIRE_SOCIALS = True
+CONFIG_PATH = Path(__file__).with_name("config.json")
+
+
+def load_config(path: Path = CONFIG_PATH) -> Dict[str, Any]:
+    """Load and validate user-tunable tracker settings from JSON."""
+    with path.open("r", encoding="utf-8") as config_file:
+        config = json.load(config_file)
+
+    required_numeric = (
+        "poll_interval_seconds",
+        "min_market_cap",
+        "min_volume_5m",
+        "min_liquidity",
+        "min_lp_locked_pct",
+        "max_rugcheck_score_normalised",
+        "max_candidates_per_cycle",
+    )
+    missing = [key for key in required_numeric if key not in config]
+    missing.extend(
+        key
+        for key in ("require_socials", "migrated_token_suffixes")
+        if key not in config
+    )
+    if missing:
+        raise ValueError(f"Missing config values: {', '.join(missing)}")
+    if any(
+        isinstance(config[key], bool)
+        or not isinstance(config[key], (int, float))
+        or config[key] < 0
+        for key in required_numeric
+    ):
+        raise ValueError("Numeric config values must be non-negative numbers")
+    if not isinstance(config["require_socials"], bool):
+        raise ValueError("require_socials must be true or false")
+    suffixes = config["migrated_token_suffixes"]
+    if not isinstance(suffixes, list) or not suffixes or not all(
+        isinstance(suffix, str) and suffix for suffix in suffixes
+    ):
+        raise ValueError("migrated_token_suffixes must be a non-empty string list")
+    if config["poll_interval_seconds"] <= 0 or config["max_candidates_per_cycle"] <= 0:
+        raise ValueError("poll_interval_seconds and max_candidates_per_cycle must exceed 0")
+    return config
+
+
+CONFIG = load_config()
+POLL_INTERVAL_SECONDS = CONFIG["poll_interval_seconds"]
+MIN_MARKET_CAP = CONFIG["min_market_cap"]
+MIN_VOLUME_5M = CONFIG["min_volume_5m"]
+MIN_LIQUIDITY = CONFIG["min_liquidity"]
+MIN_LP_LOCKED_PCT = CONFIG["min_lp_locked_pct"]
+MAX_RUGCHECK_SCORE_NORMALISED = CONFIG["max_rugcheck_score_normalised"]
+REQUIRE_SOCIALS = CONFIG["require_socials"]
 
 # Pump.fun mints end in "pump". A live DEX pair is used as the migration signal.
-MIGRATED_TOKEN_SUFFIXES = ("pump",)
+MIGRATED_TOKEN_SUFFIXES = tuple(CONFIG["migrated_token_suffixes"])
 LAUNCHPAD_DEX_IDS = {"pumpfun"}
-MAX_CANDIDATES_PER_CYCLE = 30
+MAX_CANDIDATES_PER_CYCLE = int(CONFIG["max_candidates_per_cycle"])
 
 REQUEST_TIMEOUT_SECONDS = 15
 PROFILES_URL = "https://api.dexscreener.com/token-profiles/latest/v1"
