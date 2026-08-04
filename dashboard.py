@@ -12,8 +12,11 @@ import requests
 import tracker
 
 
-HOST = "127.0.0.1"
-PORT = 8000
+import os
+
+HOST = "0.0.0.0"
+PORT = int(os.environ.get("PORT", 8000))
+
 CACHE_SECONDS = 45
 HTML_PATH = Path(__file__).with_name("dashboard.html")
 
