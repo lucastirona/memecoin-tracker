@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Migration Radar</title>
+  <style>
+    :root { --ink:#e8f7f1; --muted:#87a69b; --panel:#101b1a; --line:#213632; --green:#55f2aa; --cyan:#62d9ff; --amber:#ffc66d; --red:#ff7185; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:radial-gradient(circle at 85% -10%,#164a3d 0,transparent 32%),#07100f; font:14px/1.45 Inter,ui-sans-serif,system-ui,sans-serif; }
+    main { width:min(1400px,94vw); margin:auto; padding:34px 0 60px; }
+    header { display:flex; justify-content:space-between; gap:20px; align-items:end; margin-bottom:26px; }
+    .eyebrow { color:var(--green); text-transform:uppercase; letter-spacing:.16em; font-size:11px; font-weight:800; }
+    h1 { margin:5px 0 2px; font-size:clamp(30px,5vw,58px); line-height:1; letter-spacing:-.05em; }
+    .sub { color:var(--muted); max-width:680px; }
+    button { border:1px solid #3a655b; border-radius:10px; color:var(--ink); background:#142724; padding:10px 15px; cursor:pointer; font-weight:700; }
+    button:hover { border-color:var(--green); }
+    .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:12px; }
+    .card,.panel { background:linear-gradient(145deg,rgba(18,32,30,.96),rgba(10,20,19,.96)); border:1px solid var(--line); border-radius:16px; box-shadow:0 20px 60px #0005; }
+    .card { padding:17px 19px; }
+    .card span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.12em; }
+    .card strong { font-size:28px; letter-spacing:-.04em; }
+    .layout { display:grid; grid-template-columns:1.1fr .9fr; gap:12px; margin-bottom:12px; }
+    .panel { padding:20px; min-width:0; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+    h2 { margin:0; font-size:16px; }
+    .legend { display:flex; gap:12px; color:var(--muted); font-size:11px; }
+    .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+    #chart { width:100%; height:290px; display:block; }
+    .thresholds { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .threshold { padding:13px; border:1px solid var(--line); border-radius:12px; }
+    .threshold span { display:block; color:var(--muted); font-size:11px; }
+    .threshold b { font-size:17px; }
+    .notice { margin-top:13px; padding:12px; color:#b9cdc6; border-left:3px solid var(--amber); background:#171d18; border-radius:6px; }
+    .table-wrap { overflow:auto; }
+    table { width:100%; border-collapse:collapse; min-width:1000px; }
+    th { color:var(--muted); text-align:left; text-transform:uppercase; letter-spacing:.1em; font-size:10px; padding:0 12px 11px; }
+    td { padding:13px 12px; border-top:1px solid var(--line); white-space:nowrap; }
+    tr:hover td { background:#13221f; }
+    .token b { display:block; } .token small { color:var(--muted); }
+    .pill { display:inline-flex; align-items:center; gap:6px; border-radius:99px; padding:5px 9px; font-size:11px; font-weight:800; }
+    .pass { color:#07120d; background:var(--green); } .fail { color:#b0c2bc; background:#23322f; }
+    a { color:var(--cyan); text-decoration:none; } a:hover { text-decoration:underline; }
+    .empty { color:var(--muted); padding:30px 12px; text-align:center; }
+    .spinner { width:16px;height:16px;border:2px solid #ffffff40;border-top-color:var(--green);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:7px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media(max-width:850px){.cards{grid-template-columns:1fr 1fr}.layout{grid-template-columns:1fr}header{align-items:start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><div class="eyebrow">Solana intelligence</div><h1>Migration Radar</h1><div class="sub">Recently migrated Pump.fun tokens screened for liquidity, momentum, social presence, and RugCheck risk.</div></div>
+    <button id="refresh">Refresh scan</button>
+  </header>
+  <section class="cards">
+    <div class="card"><span>Profiles scanned</span><strong id="profiles">—</strong></div>
+    <div class="card"><span>Migrated pools</span><strong id="migrated">—</strong></div>
+    <div class="card"><span>Potential</span><strong id="potential">—</strong></div>
+    <div class="card"><span>Last scan</span><strong id="updated" style="font-size:18px">—</strong></div>
+  </section>
+  <section class="layout">
+    <div class="panel">
+      <div class="panel-head"><h2>Candidate strength</h2><div class="legend"><span><i class="dot" style="background:var(--green)"></i>Market cap</span><span><i class="dot" style="background:var(--cyan)"></i>Liquidity</span><span><i class="dot" style="background:var(--amber)"></i>5m volume</span></div></div>
+      <svg id="chart" role="img" aria-label="Candidate market metrics chart"></svg>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Active filter</h2><span class="eyebrow">All checks required</span></div>
+      <div class="thresholds" id="thresholds"></div>
+      <div class="notice">This dashboard is a screening tool, not a safety guarantee or recommendation to buy.</div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Migrated candidates</h2><span class="sub" id="status"><span class="spinner"></span>Running live scan…</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Status</th><th>Token</th><th>Market cap</th><th>Liquidity</th><th>5m volume</th><th>LP locked</th><th>Risk</th><th>Links</th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id), money=n=>'$'+Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+function chart(records){
+  const svg=$('chart'), top=records.slice(0,10), W=900,H=290,p={l:45,r:15,t:12,b:58}; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  if(!top.length){svg.innerHTML='<text x="450" y="145" text-anchor="middle" fill="#87a69b">No migrated candidates in this scan</text>';return}
+  const vals=top.flatMap(r=>[r.market_cap_usd,r.liquidity_usd,r.volume_5m_usd]).filter(Boolean), max=Math.max(...vals,1), y=v=>p.t+(H-p.t-p.b)*(1-Math.log10(v+1)/Math.log10(max+1));
+  let out=''; [0,.25,.5,.75,1].forEach(q=>{const yy=p.t+(H-p.t-p.b)*q;out+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#213632"/><text x="${p.l-7}" y="${yy+4}" text-anchor="end" fill="#68877d" font-size="10">${q===1?'$0':money(Math.pow(max+1,1-q)-1)}</text>`});
+  const group=(W-p.l-p.r)/top.length, colors=['#55f2aa','#62d9ff','#ffc66d']; top.forEach((r,i)=>{const x=p.l+i*group+group*.13, values=[r.market_cap_usd,r.liquidity_usd,r.volume_5m_usd]; values.forEach((v,j)=>{const yy=y(v),bw=group*.21;out+=`<rect x="${x+j*bw}" y="${yy}" width="${bw-2}" height="${H-p.b-yy}" rx="2" fill="${colors[j]}"/>`}); const label=(r.symbol||'?').slice(0,8);out+=`<text x="${x+group*.3}" y="${H-35}" text-anchor="middle" fill="#9bb5ac" font-size="10" transform="rotate(-28 ${x+group*.3} ${H-35})">${label}</text>`}); svg.innerHTML=out;
+}
+function render(data){
+  $('profiles').textContent=data.profiles_found;$('migrated').textContent=data.migrated_found;$('potential').textContent=data.potential_found;$('updated').textContent=new Date(data.scanned_at*1000).toLocaleTimeString();
+  const t=data.thresholds;$('thresholds').innerHTML=`<div class="threshold"><span>Minimum market cap</span><b>${money(t.market_cap)}</b></div><div class="threshold"><span>Minimum liquidity</span><b>${money(t.liquidity)}</b></div><div class="threshold"><span>Minimum 5m volume</span><b>${money(t.volume_5m)}</b></div><div class="threshold"><span>LP locked / burned</span><b>${t.lp_locked}%</b></div><div class="threshold"><span>Maximum risk score</span><b>${t.max_risk}</b></div><div class="threshold"><span>Social links</span><b>Required</b></div>`;
+  $('rows').innerHTML=data.records.length?data.records.map(r=>`<tr><td><span class="pill ${r.potential?'pass':'fail'}">${r.potential?'POTENTIAL':'FILTERED'}</span></td><td class="token"><b>${escapeHtml(r.name)} (${escapeHtml(r.symbol)})</b><small>${r.address.slice(0,6)}…${r.address.slice(-6)}</small></td><td>${money(r.market_cap_usd)}</td><td>${money(r.liquidity_usd)}</td><td>${money(r.volume_5m_usd)}</td><td>${r.lp_locked_pct.toFixed(1)}%</td><td>${r.rugcheck_score}</td><td><a href="${r.dex_url}" target="_blank" rel="noopener">Chart ↗</a>${r.socials?' · Socials ✓':''}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">No funded migrated pools found right now.</td></tr>';
+  $('status').textContent=`${data.records.length} candidates · refreshes every 45 seconds`;chart(data.records);
+}
+function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
+async function load(){ $('refresh').disabled=true;$('status').innerHTML='<span class="spinner"></span>Running live scan…';try{const r=await fetch('/api/scan');const d=await r.json();if(!r.ok)throw Error(d.error||'Scan failed');render(d)}catch(e){$('status').textContent='Error: '+e.message}finally{$('refresh').disabled=false}}
+$('refresh').onclick=load;load();setInterval(load,60000);
+</script>
+</body>
+</html>

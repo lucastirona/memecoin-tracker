@@ -1,0 +1,11 @@
+trending_tokens.csv
+trending_tokens.json
+trending_tokens.json.tmp
+migrated_tokens.csv
+migrated_tokens.json
+migrated_tokens.json.tmp
+__pycache__/
+*.py[cod]
+.DS_Store
+venv/
+.venv/
